@@ -19,6 +19,11 @@ const readData = () => {
 // Load initial data into memory
 let data = readData();
 
+// Helper function to save data to the JSON file
+const saveData = () => {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+};
+
 // Get all tasks
 app.get('/tasks', (req, res) => {
   setTimeout(() => {
@@ -47,10 +52,11 @@ app.post('/tasks', (req, res) => {
     description,
     user: "default_user",
     comments: [],
-    commentCount: 0
+    commentCount: 0,
   };
 
   data.push(newTask);
+  saveData();
   res.status(201).json(newTask);
 });
 
@@ -58,7 +64,8 @@ app.post('/tasks', (req, res) => {
 app.put('/tasks/:id', (req, res) => {
   const taskIndex = data.findIndex((task) => task._id === req.params.id);
   if (taskIndex !== -1) {
-    data[taskIndex] = req.body;
+    data[taskIndex] = { ...data[taskIndex], ...req.body };
+    saveData();
     res.json(data[taskIndex]);
   } else {
     res.status(404).send('Task not found');
@@ -70,7 +77,58 @@ app.delete('/tasks/:id', (req, res) => {
   const taskIndex = data.findIndex((task) => task._id === req.params.id);
   if (taskIndex !== -1) {
     const deletedTask = data.splice(taskIndex, 1);
+    saveData();
     res.json(deletedTask[0]);
+  } else {
+    res.status(404).send('Task not found');
+  }
+});
+
+// Get comments for a specific task
+app.get('/tasks/:id/comments', (req, res) => {
+  const task = data.find((task) => task._id === req.params.id);
+  if (task) {
+    res.json(task.comments);
+  } else {
+    res.status(404).send('Task not found');
+  }
+});
+
+// Add a comment to a specific task
+app.post('/tasks/:id/comments', (req, res) => {
+  const task = data.find((task) => task._id === req.params.id);
+  if (task) {
+    const { title, user } = req.body;
+
+    const newComment = {
+      id: uuidv4(),
+      title,
+      user: user || "anonymous",
+      createdAt: new Date().toISOString(),
+    };
+
+    task.comments.push(newComment);
+    task.commentCount += 1;
+    saveData();
+    res.status(201).json(newComment);
+  } else {
+    res.status(404).send('Task not found');
+  }
+});
+
+// Delete a comment from a specific task
+app.delete('/tasks/:taskId/comments/:commentId', (req, res) => {
+  const task = data.find((task) => task._id === req.params.taskId);
+  if (task) {
+    const commentIndex = task.comments.findIndex((comment) => comment.id === req.params.commentId);
+    if (commentIndex !== -1) {
+      const deletedComment = task.comments.splice(commentIndex, 1);
+      task.commentCount -= 1;
+      saveData();
+      res.json(deletedComment[0]);
+    } else {
+      res.status(404).send('Comment not found');
+    }
   } else {
     res.status(404).send('Task not found');
   }
