@@ -2,7 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
+const { v4: uuidv4 } = require('uuid');
+const { db } = require('./firebase'); // Import Firestore instance
+const { collection, doc, addDoc, getDoc, getDocs, updateDoc, deleteDoc } = require("firebase/firestore");
 
 const app = express();
 const PORT = 3000;
@@ -10,6 +12,39 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 
 app.use(bodyParser.json());
 
+// User login (or account creation if not found)
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
+  }
+
+  try {
+    const usersCollection = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersCollection);
+    const user = usersSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .find((user) => user.email === email);
+
+    if (!user) {
+      const newUser = { email, password, createdAt: new Date().toISOString() };
+      await addDoc(usersCollection, newUser);
+      return res.status(201).json({ message: 'Account created and login successful!', user: newUser.email });
+    }
+
+    if (user.password !== password) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    res.json({ message: 'Login successful', user: user.email });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+// Additional backend endpoints for tasks and comments (reuse your existing implementation)
 // Read data from JSON file
 const readData = () => {
   const rawData = fs.readFileSync(DATA_FILE);

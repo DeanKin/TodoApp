@@ -20,18 +20,12 @@
         "createdAt": "2025-02-07T17:31:38.142+08:00",
         "id": "00mr0abd",
         "user": "Alice"
-      },
-      {
-        "id": "d2985f76-03c0-44e6-8276-cf8379deb480",
-        "title": "Rttrt",
-        "user": "default_user",
-        "createdAt": "2025-05-21T12:14:04.200Z"
       }
     ],
     "description": "Create a new GitHub repository for the project and set up the initial structure.",
     "user": "Alice",
     "title": "Set up project repository",
-    "commentCount": 4
+    "commentCount": 3
   },
   {
     "_id": "3TIPGpzPSVfnUzn0gymv",
@@ -97,13 +91,19 @@
         "title": "I'll generate the initial docs after the endpoints are defined.",
         "id": "x1jbjkzz",
         "createdAt": "2025-02-07T16:35:18.102+08:00"
+      },
+      {
+        "id": "725b2d54-9e13-46c8-a4ab-8a23562d0784",
+        "title": "Hi",
+        "user": "default_user",
+        "createdAt": "2025-05-14T02:21:27.980Z"
       }
     ],
     "user": "Eve",
     "title": "Create API documentation",
     "createdAt": "2025-02-07T15:11:09.470+08:00",
     "description": "Use Swagger to document all API endpoints.",
-    "commentCount": 1
+    "commentCount": 2
   },
   {
     "_id": "HcqtIJs3lTpqHboMbdzc",
@@ -122,50 +122,18 @@
         "user": "Alice",
         "title": "Let's use Figma for collaboration.",
         "id": "x3phezh7"
+      },
+      {
+        "id": "8511456b-f251-4635-bcad-2e96d85252f5",
+        "title": "Hi",
+        "user": "default_user",
+        "createdAt": "2025-05-14T01:51:37.093Z"
       }
     ],
     "title": "Design UI mockups",
     "user": "Grace",
     "description": "Create wireframes and mockups for the main pages.",
     "createdAt": "2025-02-07T15:10:22.857+08:00",
-    "commentCount": 1
-  },
-  {
-    "_id": "074b2df9-9621-4fde-9607-2070015b6da7",
-    "createdAt": "2025-05-21T12:13:47.358Z",
-    "title": "Ty",
-    "description": "Yu",
-    "user": "default_user",
-    "comments": [
-      {
-        "id": "fb861f31-f534-4ac2-80d5-1d217aa7139b",
-        "title": "Rt",
-        "user": "default_user",
-        "createdAt": "2025-05-21T12:13:53.221Z"
-      }
-    ],
-    "commentCount": 1
-  },
-  {
-    "_id": "823ccb15-8c41-45fb-a5b6-29da4d332be2",
-    "createdAt": "2025-05-21T12:15:09.329Z",
-    "title": "Dean",
-    "description": "Poo",
-    "user": "default_user",
-    "comments": [
-      {
-        "id": "84fcaf73-3520-4131-a51e-59e78b5edb7a",
-        "title": "Yes",
-        "user": "default_user",
-        "createdAt": "2025-05-21T12:15:15.295Z"
-      },
-      {
-        "id": "21a53c53-0da6-4ebe-b56b-938cd1ff8599",
-        "title": " O",
-        "user": "default_user",
-        "createdAt": "2025-05-21T12:15:27.333Z"
-      }
-    ],
     "commentCount": 2
   }
 ]
