@@ -1,171 +1,239 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const { db } = require('./firebase'); // Import Firestore instance
+const { v4: uuidv4 } = require('uuid'); // For generating unique IDs
+const { db } = require('./firebase'); // Import Firestore database instance from firebase.js
 const { collection, doc, addDoc, getDoc, getDocs, updateDoc, deleteDoc } = require("firebase/firestore");
+const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = require("firebase/auth"); // Import Firebase Auth
 
 const app = express();
 const PORT = 3000;
-const DATA_FILE = path.join(__dirname, 'data.json');
 
 app.use(bodyParser.json());
 
-// User login (or account creation if not found)
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required.' });
-  }
-
-  try {
-    const usersCollection = collection(db, 'users');
-    const usersSnapshot = await getDocs(usersCollection);
-    const user = usersSnapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .find((user) => user.email === email);
-
-    if (!user) {
-      const newUser = { email, password, createdAt: new Date().toISOString() };
-      await addDoc(usersCollection, newUser);
-      return res.status(201).json({ message: 'Account created and login successful!', user: newUser.email });
-    }
-
-    if (user.password !== password) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
-    }
-
-    res.json({ message: 'Login successful', user: user.email });
-  } catch (error) {
-    console.error('Error during login:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
-
-// Additional backend endpoints for tasks and comments (reuse your existing implementation)
-// Read data from JSON file
-const readData = () => {
-  const rawData = fs.readFileSync(DATA_FILE);
-  return JSON.parse(rawData);
-};
-
-// Load initial data into memory
-let data = readData();
-
-// Helper function to save data to the JSON file
-const saveData = () => {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-};
+// Initialize Firebase Auth
+const auth = getAuth();
 
 // Get all tasks
-app.get('/tasks', (req, res) => {
-  setTimeout(() => {
-    res.json(data);
-  }, 1000); // 1 second delay
+app.get('/tasks', async (req, res) => {
+  try {
+    const tasksCollection = collection(db, 'tasks');
+    const tasksSnapshot = await getDocs(tasksCollection);
+    const tasks = tasksSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    res.json(tasks);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    res.status(500).send("Failed to fetch tasks.");
+  }
 });
 
 // Get a specific task by ID
-app.get('/tasks/:id', (req, res) => {
-  const task = data.find((task) => task._id === req.params.id);
-  if (task) {
-    res.json(task);
-  } else {
-    res.status(404).send('Task not found');
+app.get('/tasks/:id', async (req, res) => {
+  try {
+    const taskRef = doc(db, 'tasks', req.params.id);
+    const taskDoc = await getDoc(taskRef);
+
+    if (taskDoc.exists()) {
+      res.json({ id: taskDoc.id, ...taskDoc.data() });
+    } else {
+      res.status(404).send('Task not found');
+    }
+  } catch (error) {
+    console.error("Error fetching task:", error);
+    res.status(500).send("Failed to fetch task.");
   }
 });
 
 // Create a new task
-app.post('/tasks', (req, res) => {
-  const { title, description } = req.body;
-
+app.post('/tasks', async (req, res) => {
+  const { title, description, user } = req.body; // Include user in the request body
   const newTask = {
-    _id: uuidv4(),
-    createdAt: new Date().toISOString(),
     title,
     description,
-    user: "default_user",
+    user: user || "default_user", // Default to "default_user" if user is not provided
+    createdAt: new Date().toISOString(),
     comments: [],
     commentCount: 0,
   };
 
-  data.push(newTask);
-  saveData();
-  res.status(201).json(newTask);
+  try {
+    const tasksCollection = collection(db, 'tasks');
+    const taskRef = await addDoc(tasksCollection, newTask);
+    res.status(201).json({ id: taskRef.id, ...newTask });
+  } catch (error) {
+    console.error("Error creating task:", error);
+    res.status(500).send("Failed to create task.");
+  }
 });
 
 // Update a task by ID
-app.put('/tasks/:id', (req, res) => {
-  const taskIndex = data.findIndex((task) => task._id === req.params.id);
-  if (taskIndex !== -1) {
-    data[taskIndex] = { ...data[taskIndex], ...req.body };
-    saveData();
-    res.json(data[taskIndex]);
-  } else {
-    res.status(404).send('Task not found');
+app.put('/tasks/:id', async (req, res) => {
+  try {
+    const taskRef = doc(db, 'tasks', req.params.id);
+    const taskDoc = await getDoc(taskRef);
+
+    if (taskDoc.exists()) {
+      await updateDoc(taskRef, req.body);
+      res.json({ id: req.params.id, ...req.body });
+    } else {
+      res.status(404).send('Task not found');
+    }
+  } catch (error) {
+    console.error("Error updating task:", error);
+    res.status(500).send("Failed to update task.");
   }
 });
 
 // Delete a task by ID
-app.delete('/tasks/:id', (req, res) => {
-  const taskIndex = data.findIndex((task) => task._id === req.params.id);
-  if (taskIndex !== -1) {
-    const deletedTask = data.splice(taskIndex, 1);
-    saveData();
-    res.json(deletedTask[0]);
-  } else {
-    res.status(404).send('Task not found');
+app.delete('/tasks/:id', async (req, res) => {
+  try {
+    const taskRef = doc(db, 'tasks', req.params.id);
+    const taskDoc = await getDoc(taskRef);
+
+    if (taskDoc.exists()) {
+      await deleteDoc(taskRef);
+      res.json({ id: req.params.id });
+    } else {
+      res.status(404).send('Task not found');
+    }
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    res.status(500).send("Failed to delete task.");
   }
 });
 
 // Get comments for a specific task
-app.get('/tasks/:id/comments', (req, res) => {
-  const task = data.find((task) => task._id === req.params.id);
-  if (task) {
-    res.json(task.comments);
-  } else {
-    res.status(404).send('Task not found');
+app.get('/tasks/:id/comments', async (req, res) => {
+  try {
+    const taskRef = doc(db, 'tasks', req.params.id);
+    const taskDoc = await getDoc(taskRef);
+
+    if (taskDoc.exists()) {
+      res.json(taskDoc.data().comments || []);
+    } else {
+      res.status(404).send('Task not found');
+    }
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    res.status(500).send("Failed to fetch comments.");
   }
 });
 
 // Add a comment to a specific task
-app.post('/tasks/:id/comments', (req, res) => {
-  const task = data.find((task) => task._id === req.params.id);
-  if (task) {
-    const { title, user } = req.body;
+app.post('/tasks/:id/comments', async (req, res) => {
+  const { title, user } = req.body; // Include user in the request body
+  const newComment = {
+    id: uuidv4(),
+    title,
+    user: user || "default_user", // Default to "default_user" if user is not provided
+    createdAt: new Date().toISOString(),
+  };
 
-    const newComment = {
-      id: uuidv4(),
-      title,
-      user: user || "anonymous",
-      createdAt: new Date().toISOString(),
-    };
+  try {
+    const taskRef = doc(db, 'tasks', req.params.id);
+    const taskDoc = await getDoc(taskRef);
+    if (taskDoc.exists()) {
+      const taskData = taskDoc.data();
+      const updatedComments = [...(taskData.comments || []), newComment];
+      await updateDoc(taskRef, {
+        comments: updatedComments,
+        commentCount: (taskData.commentCount || 0) + 1,
+      });
 
-    task.comments.push(newComment);
-    task.commentCount += 1;
-    saveData();
-    res.status(201).json(newComment);
-  } else {
-    res.status(404).send('Task not found');
+      res.status(201).json(newComment);
+    } else {
+      res.status(404).send('Task not found');
+    }
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    res.status(500).send("Failed to add comment.");
   }
 });
 
 // Delete a comment from a specific task
-app.delete('/tasks/:taskId/comments/:commentId', (req, res) => {
-  const task = data.find((task) => task._id === req.params.taskId);
-  if (task) {
-    const commentIndex = task.comments.findIndex((comment) => comment.id === req.params.commentId);
-    if (commentIndex !== -1) {
-      const deletedComment = task.comments.splice(commentIndex, 1);
-      task.commentCount -= 1;
-      saveData();
-      res.json(deletedComment[0]);
+app.delete('/tasks/:taskId/comments/:commentId', async (req, res) => {
+  try {
+    const taskRef = doc(db, 'tasks', req.params.taskId);
+    const taskDoc = await getDoc(taskRef);
+
+    if (taskDoc.exists()) {
+      const taskData = taskDoc.data();
+      const updatedComments = (taskData.comments || []).filter(
+        (comment) => comment.id !== req.params.commentId
+      );
+
+      if (updatedComments.length < (taskData.comments || []).length) {
+        await updateDoc(taskRef, {
+          comments: updatedComments,
+          commentCount: updatedComments.length,
+        });
+
+        res.json({ id: req.params.commentId });
+      } else {
+        res.status(404).send('Comment not found');
+      }
     } else {
-      res.status(404).send('Comment not found');
+      res.status(404).send('Task not found');
     }
-  } else {
-    res.status(404).send('Task not found');
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    res.status(500).send("Failed to delete comment.");
+  }
+});
+
+// Login or Register Endpoint
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+  }
+
+  try {
+    // Attempt to log in the user
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const token = await userCredential.user.getIdToken();
+    res.status(200).json({ success: true, token, uid: userCredential.user.uid });
+  } catch (error) {
+    // Handle specific errors
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+      try {
+        // Automatically register the user if login fails due to non-existent credentials
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const token = await userCredential.user.getIdToken();
+        res.status(201).json({
+          success: true,
+          message: 'Account created and login successful!',
+          token,
+          uid: userCredential.user.uid,
+        });
+      } catch (registrationError) {
+        console.error('Error during registration:', registrationError);
+        let errorMessage;
+        switch (registrationError.code) {
+          case 'auth/invalid-email':
+            errorMessage = 'Invalid email. Please check your email and try again.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'Weak password. Please use a stronger password.';
+            break;
+          default:
+            errorMessage = 'Registration failed. Please try again.';
+        }
+        res.status(500).json({ success: false, message: errorMessage });
+      }
+    } else {
+      // Handle other login errors
+      console.error('Error during login:', error);
+      let errorMessage;
+      switch (error.code) {
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password. Please try again.';
+          break;
+        default:
+          errorMessage = 'Login failed. Please try again.';
+      }
+      res.status(401).json({ success: false, message: errorMessage });
+    }
   }
 });
 

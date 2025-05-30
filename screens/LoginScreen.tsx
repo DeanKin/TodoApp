@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -22,6 +23,7 @@ const LoginScreen = () => {
 
       if (response.ok) {
         const data = await response.json();
+        await AsyncStorage.setItem('loggedInUser', email); // Store the email in AsyncStorage
         Alert.alert('Login Successful', `Welcome, ${data.user || email}!`);
         navigation.navigate('Home');
       } else {

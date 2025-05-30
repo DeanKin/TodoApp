@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
 const Comments = ({ route }) => {
   const { id, title } = route.params;
-  const API_URL = 'http://xxx.xxx.xxx.xxx:3000'; // Replace with your actual API URL
+  const API_URL = 'http://172.18.13.193:3000'; // Replace with your actual API URL
 
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +27,9 @@ const Comments = ({ route }) => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/tasks/${id}/comments`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch comments');
+      }
       const result = await response.json();
       setComments(result);
     } catch (error) {
@@ -28,15 +41,31 @@ const Comments = ({ route }) => {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) {
+      Alert.alert('Error', 'Comment cannot be empty.');
+      return;
+    }
+
     try {
+      // Retrieve the logged-in user's email from AsyncStorage
+      const user = await AsyncStorage.getItem('loggedInUser');
+      if (!user) {
+        Alert.alert('Error', 'No logged-in user found. Please log in again.');
+        return;
+      }
+
       const response = await fetch(`${API_URL}/tasks/${id}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title: newComment, user: "default_user" }),
+        body: JSON.stringify({ title: newComment, user }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to add comment');
+      }
+
       const createdComment = await response.json();
       setComments((prev) => [...prev, createdComment]);
       setNewComment('');
@@ -59,7 +88,7 @@ const Comments = ({ route }) => {
       <Text style={styles.header}>{title}</Text>
       <FlatList
         data={comments}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id || Math.random().toString()} // Ensure a unique key
         renderItem={({ item }) => (
           <View style={styles.commentItem}>
             <Text style={styles.commentText}>{item.title}</Text>
@@ -96,9 +125,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 5,
+    backgroundColor: '#f9f9f9',
   },
   commentText: {
     fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
   commentMeta: {
     fontSize: 12,
@@ -119,6 +151,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

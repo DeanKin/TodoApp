@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import ShowModal from './ShowModal';
 
 const HomeScreen = () => {
-  const API_URL = 'http://172.18.13.193:3000'; // Replace with your actual API URL
+  const API_URL = 'http://172.18.13.193:3000';
   const navigation = useNavigation();
 
   const [data, setData] = useState([]);
@@ -32,13 +33,23 @@ const HomeScreen = () => {
 
   const handleAddTask = async (newTask) => {
     try {
+      const user = await AsyncStorage.getItem('loggedInUser'); // Retrieve the logged-in user's email
+      if (!user) {
+        Alert.alert('Error', 'No logged-in user found. Please log in again.');
+        return;
+      }
+
+      const taskWithUser = { ...newTask, user }; // Include the user in the task data
       const response = await fetch(`${API_URL}/tasks`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newTask),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskWithUser),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to add task');
+      }
+
       const createdTask = await response.json();
       setData((prevData) => [...prevData, createdTask]);
     } catch (error) {
@@ -55,7 +66,7 @@ const HomeScreen = () => {
 
   const handleTaskPress = (task) => {
     navigation.navigate('Comments', {
-      id: task._id,
+      id: task.id,
       title: task.title,
     });
   };
@@ -91,7 +102,7 @@ const HomeScreen = () => {
       <FlatList
         data={data}
         renderItem={renderItem}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => item._id || `key-${index}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       />
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
@@ -110,48 +121,14 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 10,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    textAlign: 'center',
-  },
-  itemContainer: {
-    padding: 10,
-    marginVertical: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  description: {
-    fontSize: 14,
-    marginVertical: 5,
-  },
-  meta: {
-    fontSize: 12,
-    color: '#666',
-  },
-  addButton: {
-    padding: 10,
-    backgroundColor: '#007BFF',
-    alignItems: 'center',
-    borderRadius: 5,
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, padding: 10 },
+  header: { fontSize: 24, fontWeight: 'bold', marginVertical: 10, textAlign: 'center' },
+  itemContainer: { padding: 10, marginVertical: 5, borderWidth: 1, borderColor: '#ccc', borderRadius: 5, backgroundColor: '#fff' },
+  title: { fontSize: 18, fontWeight: 'bold' },
+  description: { fontSize: 14, marginVertical: 5 },
+  meta: { fontSize: 12, color: '#666' },
+  addButton: { padding: 10, backgroundColor: '#007BFF', alignItems: 'center', borderRadius: 5, marginBottom: 20, marginTop: 10 },
+  buttonText: { color: '#ffffff', fontWeight: 'bold' },
 });
 
 export default HomeScreen;
