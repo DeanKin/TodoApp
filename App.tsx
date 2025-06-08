@@ -6,6 +6,7 @@ import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import Comment from './screens/Comments';
 import Exchange from './screens/Exchange';
+import CameraScreen from './screens/Camera';
 
 const Stack = createStackNavigator();
 
@@ -28,6 +29,17 @@ export default function App() {
             headerTitleStyle: {
               fontWeight: 'bold',
             },
+          }}
+        />
+        <Stack.Screen 
+          name="Camera" 
+          component={CameraScreen}
+          options={{
+            title: 'Currency Verification',
+            headerStyle: {
+              backgroundColor: '#000',
+            },
+            headerTintColor: '#fff',
           }}
         />
       </Stack.Navigator>

@@ -102,12 +102,20 @@ const HomeScreen = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Todo List</Text>
-        <TouchableOpacity
-          style={styles.exchangeButton}
-          onPress={() => navigation.navigate('Exchange')}
-        >
-          <Text style={styles.exchangeButtonText}>Exchange Rates</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.exchangeButton}
+            onPress={() => navigation.navigate('Exchange')}
+          >
+            <Text style={styles.exchangeButtonText}>Exchange Rates</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cameraButton}
+            onPress={() => navigation.navigate('Camera')}
+          >
+            <Text style={styles.exchangeButtonText}>Verify Currency</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <FlatList
         data={tasks}
@@ -145,15 +153,25 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, color: '#666' },
   addButton: { padding: 10, backgroundColor: '#007BFF', alignItems: 'center', borderRadius: 5, marginBottom: 20, marginTop: 10 },
   buttonText: { color: '#ffffff', fontWeight: 'bold' },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   exchangeButton: {
     backgroundColor: '#2196F3',
     padding: 10,
     borderRadius: 5,
-    marginTop: 10,
+    flex: 1,
+  },
+  cameraButton: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
   },
   exchangeButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
   },
