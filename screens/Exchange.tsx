@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 
 interface ExchangeRate {
@@ -38,13 +39,23 @@ const Exchange = () => {
       const data: ApiResponse = await response.json();
 
       if (data.success) {
-        // Add EUR rate (base currency) manually as it's not in the response
-        const allRates = {
-          EUR: 1,
-          ...data.rates
+        // Get the HKD rate from the response
+        const hkdRate = data.rates.HKD;
+        
+        // Calculate rates relative to HKD
+        const hkdBasedRates: { [key: string]: number } = {
+          HKD: 1, // HKD is now the base currency
+          EUR: 1 / hkdRate, // Convert EUR to HKD-based rate
         };
 
-        const ratesArray = Object.entries(allRates).map(([currency, rate]) => ({
+        // Convert all other rates to HKD base
+        Object.entries(data.rates).forEach(([currency, rate]) => {
+          if (currency !== 'HKD') {
+            hkdBasedRates[currency] = rate / hkdRate;
+          }
+        });
+
+        const ratesArray = Object.entries(hkdBasedRates).map(([currency, rate]) => ({
           currency,
           rate,
         }));
@@ -56,6 +67,7 @@ const Exchange = () => {
       }
     } catch (error) {
       console.error('Error fetching exchange rates:', error);
+      Alert.alert('Error', 'Failed to fetch exchange rates. Please try again later.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -113,7 +125,7 @@ const Exchange = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Exchange Rates</Text>
-        <Text style={styles.subtitle}>Base Currency: EUR</Text>
+        <Text style={styles.subtitle}>Base Currency: HKD</Text>
         <Text style={styles.updateTime}>Last updated: {lastUpdated}</Text>
       </View>
       <FlatList
