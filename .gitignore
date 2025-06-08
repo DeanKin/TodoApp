@@ -5,3 +5,6 @@ node_modules/*
 # Common testing patterns (optional but recommended)
 **/node_modules/
 **/node_modules/tmp/* 
+
+# Server specific ignores
+server/node_modules/ 
