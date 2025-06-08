@@ -1,0 +1,7 @@
+# Ignore testing folder
+node_modules/
+node_modules/*
+
+# Common testing patterns (optional but recommended)
+**/node_modules/
+**/node_modules/tmp/* 
