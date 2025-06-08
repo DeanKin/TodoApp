@@ -7,4 +7,9 @@ node_modules/*
 **/node_modules/tmp/* 
 
 # Server specific ignores
-server/node_modules/ 
+server/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local 

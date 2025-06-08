@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import Comment from './screens/Comments';
+import Exchange from './screens/Exchange';
 
 const Stack = createStackNavigator();
 
@@ -15,6 +16,20 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Comments" component={Comment} />
+        <Stack.Screen 
+          name="Exchange" 
+          component={Exchange}
+          options={{
+            title: 'Exchange Rates',
+            headerStyle: {
+              backgroundColor: '#f4511e',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

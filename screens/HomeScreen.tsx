@@ -3,12 +3,14 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, 
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import ShowModal from './ShowModal';
+import { API_CONFIG, getApiUrl } from '../src/config/api.config';
+import { Task } from '../src/types';
 
 const HomeScreen = () => {
-  const API_URL = 'http://172.18.13.193:3000';
   const navigation = useNavigation();
 
-  const [data, setData] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTask, setNewTask] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -20,9 +22,9 @@ const HomeScreen = () => {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/tasks`);
+      const response = await fetch(getApiUrl('/tasks'));
       const result = await response.json();
-      setData(result);
+      setTasks(result);
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
       Alert.alert('Error', 'Failed to fetch tasks. Please try again later.');
@@ -40,7 +42,7 @@ const HomeScreen = () => {
       }
 
       const taskWithUser = { ...newTask, user }; // Include the user in the task data
-      const response = await fetch(`${API_URL}/tasks`, {
+      const response = await fetch(getApiUrl('/tasks'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskWithUser),
@@ -51,7 +53,7 @@ const HomeScreen = () => {
       }
 
       const createdTask = await response.json();
-      setData((prevData) => [...prevData, createdTask]);
+      setTasks((prevData) => [...prevData, createdTask]);
     } catch (error) {
       console.error("Failed to add task:", error);
       Alert.alert('Error', 'Failed to add task. Please try again later.');
@@ -71,7 +73,7 @@ const HomeScreen = () => {
     });
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item }: { item: Task }) => {
     const date = new Date(item.createdAt);
     const formattedDate = date.toLocaleDateString();
     const formattedTime = date.toLocaleTimeString();
@@ -98,9 +100,17 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Todo List</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Todo List</Text>
+        <TouchableOpacity
+          style={styles.exchangeButton}
+          onPress={() => navigation.navigate('Exchange')}
+        >
+          <Text style={styles.exchangeButtonText}>Exchange Rates</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
-        data={data}
+        data={tasks}
         renderItem={renderItem}
         keyExtractor={(item, index) => item._id || `key-${index}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
@@ -122,13 +132,31 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10 },
-  header: { fontSize: 24, fontWeight: 'bold', marginVertical: 10, textAlign: 'center' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  headerText: { fontSize: 24, fontWeight: 'bold' },
   itemContainer: { padding: 10, marginVertical: 5, borderWidth: 1, borderColor: '#ccc', borderRadius: 5, backgroundColor: '#fff' },
   title: { fontSize: 18, fontWeight: 'bold' },
   description: { fontSize: 14, marginVertical: 5 },
   meta: { fontSize: 12, color: '#666' },
   addButton: { padding: 10, backgroundColor: '#007BFF', alignItems: 'center', borderRadius: 5, marginBottom: 20, marginTop: 10 },
   buttonText: { color: '#ffffff', fontWeight: 'bold' },
+  exchangeButton: {
+    backgroundColor: '#2196F3',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  exchangeButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });
 
 export default HomeScreen;

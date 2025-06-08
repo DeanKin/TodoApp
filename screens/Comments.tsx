@@ -10,14 +10,15 @@ import {
   Alert
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import { API_CONFIG, getApiUrl } from '../src/config/api.config';
+import { Comment, RouteParams } from '../src/types';
 
-const Comments = ({ route }) => {
+const Comments = ({ route }: { route: { params: RouteParams } }) => {
   const { id, title } = route.params;
-  const API_URL = 'http://172.18.13.193:3000'; // Replace with your actual API URL
-
-  const [comments, setComments] = useState([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchComments();
@@ -26,7 +27,7 @@ const Comments = ({ route }) => {
   const fetchComments = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/tasks/${id}/comments`);
+      const response = await fetch(getApiUrl(`/tasks/${id}/comments`));
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
       }
@@ -54,7 +55,7 @@ const Comments = ({ route }) => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/tasks/${id}/comments`, {
+      const response = await fetch(getApiUrl(`/tasks/${id}/comments`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +90,7 @@ const Comments = ({ route }) => {
       <FlatList
         data={comments}
         keyExtractor={(item) => item.id || Math.random().toString()} // Ensure a unique key
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: Comment }) => (
           <View style={styles.commentItem}>
             <Text style={styles.commentText}>{item.title}</Text>
             <Text style={styles.commentMeta}>By: {item.user}</Text>
